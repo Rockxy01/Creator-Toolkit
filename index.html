@@ -300,53 +300,65 @@
         }
 
         // Spell Check
-        function checkSpellingAndGrammar() {
+        async function checkSpellingAndGrammar() {
             const text = document.getElementById('spellCheckText').value;
             const resultsDiv = document.getElementById('spellCheckResults');
             
-            const spellingMistakes = {
-                "teh": "the",
-                "recieve": "receive",
-                "adress": "address",
-                "definately": "definitely",
-            };
-
-            const grammarRules = [
-                {
-                    regex: /\b(I|i) (is|are|was|were)\b/g,
-                    correction: "I am",
-                    message: "Use 'I am' instead of 'I is/are/was/were'"
-                },
-                {
-                    regex: /\b(would of|could of|should of)\b/g,
-                    correction: match => match.replace("of", "have"),
-                    message: "Use 'would have/could have/should have' instead of 'would of/could of/should of'"
-                },
-            ];
-
-            let resultHTML = "<h4>Spelling & Grammar Issues:</h4><ul>";
-            
-            // Check for spelling mistakes
-            const words = text.split(/\s+/);
-            for (let word of words) {
-                const lowerWord = word.toLowerCase();
-                if (spellingMistakes[lowerWord]) {
-                    resultHTML += `<li>Spelling mistake: <strong>${word}</strong> - Suggested: <em>${spellingMistakes[lowerWord]}</em></li>`;
-                }
+            if (!text.trim()) {
+                resultsDiv.innerHTML = '<p>Please enter some text to check.</p>';
+                return;
             }
 
-            // Check for grammar issues
-            grammarRules.forEach(rule => {
-                let match;
-                while ((match = rule.regex.exec(text)) !== null) {
-                    const issueText = match[0];
-                    const correction = typeof rule.correction === "function" ? rule.correction(issueText) : rule.correction;
-                    resultHTML += `<li>Grammar issue: <strong>${issueText}</strong> - Suggested: <em>${correction}</em> (${rule.message})</li>`;
-                }
-            });
+            resultsDiv.innerHTML = '<p>Checking spelling and grammar...</p>';
+            
+            try {
+                const response = await fetch('https://api.languagetool.org/v2/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        text: text,
+                        language: 'en-US'
+                    })
+                });
 
-            resultHTML += "</ul>";
-            resultsDiv.innerHTML = resultHTML;
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                
+                if (data.matches.length === 0) {
+                    resultsDiv.innerHTML = '<p>No spelling or grammar issues found!</p>';
+                    return;
+                }
+
+                let resultHTML = "<h4>Spelling & Grammar Issues:</h4><ul>";
+                
+                data.matches.forEach(match => {
+                    const context = text.substring(match.offset, match.offset + match.length);
+                    const suggestions = match.replacements
+                        .slice(0, 3)
+                        .map(r => r.value)
+                        .join(', ');
+
+                    resultHTML += `
+                        <li>
+                            <strong>Issue:</strong> "${context}"<br>
+                            <strong>Message:</strong> ${match.message}<br>
+                            ${suggestions ? `<strong>Suggestions:</strong> ${suggestions}` : ''}
+                        </li>
+                    `;
+                });
+
+                resultHTML += "</ul>";
+                resultsDiv.innerHTML = resultHTML;
+
+            } catch (error) {
+                console.error('Error checking text:', error);
+                resultsDiv.innerHTML = '<p>Sorry, there was an error checking your text. Please try again.</p>';
+            }
         }
         // Headline Analyzer
         function analyzeHeadline() {
