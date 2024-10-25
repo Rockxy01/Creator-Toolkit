@@ -361,11 +361,11 @@
             let score = 0;
             if (length >= 20 && length <= 65) score += 30;
             if (words >= 6 && words <= 12) score += 20;
-            if (hasNumber) score += 15;
+            if (hasNumber) score += 20;
             
             let headlineHTML = `
-                <h4>Headline Score: ${score}/80</h4>
-                <div class="score-indicator ${score > 60 ? 'score-good' : score > 40 ? 'score-warning' : 'score-bad'}"></div>
+                <h4>Headline Score: ${score}/70</h4>
+                <div class="score-indicator ${score > 55 ? 'score-good' : score > 30 ? 'score-warning' : 'score-bad'}"></div>
                 <h4>Analysis:</h4>
                 <ul>
                     <li>Length: ${length} characters ${length >= 20 && length <= 65 ? '✓' : '×'}</li>
